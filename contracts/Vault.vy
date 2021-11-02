@@ -1005,6 +1005,7 @@ def withdraw(
     maxShares: uint256 = MAX_UINT256,
     recipient: address = msg.sender,
     maxLoss: uint256 = 1,  # 0.01% [BPS]
+    minShares: uint256 = 1,
 ) -> uint256:
     """
     @notice
@@ -1048,9 +1049,14 @@ def withdraw(
     @param maxLoss
         The maximum acceptable loss to sustain on withdrawal. Defaults to 0.01%.
         If a loss is specified, up to that amount of shares may be burnt to cover losses on withdrawal.
+    @param minShares
+        Minimum number of shares that will need to be redeemed or else revert transaction, defaults to 1
     @return The quantity of tokens redeemed for `_shares`.
     """
     shares: uint256 = maxShares  # May reduce this number below
+
+    # Max Shares to withdraw should be greater than or equal to min shares needed to be withdrawn
+    assert maxShares >= minShares
 
     # Max Loss is <=100%, revert otherwise
     assert maxLoss <= MAX_BPS
@@ -1120,6 +1126,7 @@ def withdraw(
             # NOTE: Burn # of shares that corresponds to what Vault has on-hand,
             #       including the losses that were incurred above during withdrawals
             shares = self._sharesForAmount(value + totalLoss)
+            assert shares >= minShares
 
         # NOTE: This loss protection is put in place to revert if losses from
         #       withdrawing are more than what is considered acceptable.
